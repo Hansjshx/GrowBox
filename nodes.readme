@@ -1,0 +1,13 @@
+@flowfuse/node-red-dashboard
+@flowfuse/node-red-dashboard-2-ui-iframe
+@flowfuse/node-red-dashboard-2-ui-led
+@hotnipi/node-red-dashboard-2-ui-gauge-linear
+node-red-contrib-boolean-logic
+node-red-contrib-controltimer
+node-red-contrib-deconz
+node-red-contrib-eztimer
+node-red-contrib-influxdb (optional)
+node-red-contrib-persistent-global-context
+node-red-contrib-tasmota
+node-red-node-pushover (optional)
+node-red-node-ui-table
