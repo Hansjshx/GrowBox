@@ -71,6 +71,8 @@ Das Node-RED-Projekt automatisiert die Steuerung und Überwachung einer Growbox 
 
 Dieses Projekt kombiniert moderne IoT-Technologien wie ZigBee mit hydroponischer Präzision, um eine effiziente und benutzerfreundliche Lösung für den Betrieb einer Growbox zu schaffen!
 
+---
+
 ### **Project Description**  
 The Node-RED project automates the control and monitoring of a grow box equipped with a hydroponic ebb and flow system. Connected devices such as water pumps, fans, and lighting are controlled via ZigBee smart plugs. Two ESP32 boards collect climate data (temperature, humidity, light intensity) as well as nutrient solution parameters (temperature, level, EC value). Node-RED serves as the central platform for control, visualization, and data logging.
 
@@ -147,5 +149,4 @@ The Node-RED project automates the control and monitoring of a grow box equipped
 
 This project combines modern IoT technologies like ZigBee with hydroponic precision to create an efficient and user-friendly solution for operating a grow box!
 
-Quellen
 
