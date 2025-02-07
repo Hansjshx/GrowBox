@@ -1,5 +1,5 @@
 # GrowBox
-Node-RED Flow to control a hydroponic grow box
+Node-RED Flow to control a hydroponic grow box (english description below)
 
 ---
 
