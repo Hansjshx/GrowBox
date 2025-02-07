@@ -1,6 +1,9 @@
 # GrowBox
 Node-RED Flow to control a hydroponic grow box (english description below)
 
+![Capto_Capture 2025-02-02_11-38-52_PM](https://github.com/user-attachments/assets/522eeb70-1b32-47ed-89db-66000103ec37)
+
+
 ---
 
 ### **Projektbeschreibung**
