@@ -681,7 +681,7 @@
         "type": "function",
         "z": "691b89143e2e3469",
         "name": "TDS berechnen",
-        "func": "var voltage = msg.payload.ADS1115.A0;\nvar temperature = msg.payload.DS18B20.Temperature;\n//const VREF = 3.3;\nconst VREF = 5.0;\n\nconst CELL_CONSTANT = 6.718; // Kalibrierte Zellkonstante für Sonde\nconst TDS_CONVERSION_FACTOR = 0.5; // Umrechnungsfaktor für Düngerlösungen\n\n// EC-Wert berechnen (Spannung zur Leitfähigkeit)\nconst ecMeasured = voltage / CELL_CONSTANT;\n\n// Temperaturkompensation auf 25°C\nconst ecCompensated = ecMeasured / (1 + 0.02 * (temperature - 25));\n\n// TDS-Berechnung\nconst tdsValue = ecCompensated * TDS_CONVERSION_FACTOR;\n\nconsole.log(`Temperatur: ${temperature.toFixed(2)}°C`);\nconsole.log(`EC (kompensiert): ${ecCompensated.toFixed(2)} mS/cm`);\nconsole.log(`TDS-Wert: ${tdsValue.toFixed(2)} ppm`);\n\n\nmsg.payload.voltage = voltage;\nmsg.payload.tds = Math.round(tdsValue);\nmsg.payload.ec = Math.round(ecCompensated);\nmsg.payload.unit = \"ppm\";\nreturn msg;",
+        "func": "var voltage = msg.payload.ADS1115.A0;\nvar temperature = msg.payload.DS18B20.Temperature;\n//const VREF = 3.3;\nconst VREF = 5.0;\n\nconst CELL_CONSTANT = global.get(\"CELL_CONSTANT\") || 6.718;\n\n//const CELL_CONSTANT = 6.718; // Kalibrierte Zellkonstante für Sonde\nconst TDS_CONVERSION_FACTOR = 0.5; // Umrechnungsfaktor für Düngerlösungen\n\n// EC-Wert berechnen (Spannung zur Leitfähigkeit)\nconst ecMeasured = voltage / CELL_CONSTANT;\n\n// Temperaturkompensation auf 25°C\nconst ecCompensated = ecMeasured / (1 + 0.02 * (temperature - 25));\n\n// TDS-Berechnung\nconst tdsValue = ecCompensated * TDS_CONVERSION_FACTOR;\n\nconsole.log(`Temperatur: ${temperature.toFixed(2)}°C`);\nconsole.log(`EC (kompensiert): ${ecCompensated.toFixed(2)} mS/cm`);\nconsole.log(`TDS-Wert: ${tdsValue.toFixed(2)} ppm`);\n\n\nmsg.payload.voltage = voltage;\nmsg.payload.tds = Math.round(tdsValue);\nmsg.payload.ec = Math.round(ecCompensated);\nmsg.payload.unit = \"ppm\";\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -1492,7 +1492,7 @@
         "z": "691b89143e2e3469",
         "name": "EC",
         "group": "1ef18b1110bc55e6",
-        "order": 5,
+        "order": 6,
         "width": 3,
         "height": 3,
         "gtype": "gauge-34",
@@ -1591,7 +1591,7 @@
         "z": "691b89143e2e3469",
         "name": "Füllstand",
         "group": "1ef18b1110bc55e6",
-        "order": 4,
+        "order": 5,
         "width": 3,
         "height": 3,
         "gtype": "gauge-34",
@@ -1787,7 +1787,7 @@
         "z": "691b89143e2e3469",
         "name": "Temperatur",
         "group": "1ef18b1110bc55e6",
-        "order": 6,
+        "order": 7,
         "width": 3,
         "height": 3,
         "gtype": "gauge-34",
@@ -4590,7 +4590,8 @@
             [
                 "ad58679c20448e9e",
                 "cbb4da323644b0f1",
-                "e4e5fcbc95236a06"
+                "e4e5fcbc95236a06",
+                "6c1832c4be830aad"
             ]
         ]
     },
@@ -6344,7 +6345,7 @@
             }
         ],
         "x": 930,
-        "y": 220,
+        "y": 240,
         "wires": [
             [
                 "27eb3d09af904f1a"
@@ -6423,7 +6424,7 @@
             }
         ],
         "x": 930,
-        "y": 260,
+        "y": 280,
         "wires": [
             [
                 "27eb3d09af904f1a"
@@ -6521,6 +6522,95 @@
         "wires": [
             [
                 "3fe396eea2752e33"
+            ]
+        ]
+    },
+    {
+        "id": "6c1832c4be830aad",
+        "type": "function",
+        "z": "b1cb8d2091eb6c02",
+        "name": "global.CELL_CONSTANT",
+        "func": "msg.payload = global.get('CELL_CONSTANT') || 6.718; // Standardwert auf 1 Stunde setzen, falls dosierpause nicht definiert ist\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 470,
+        "y": 200,
+        "wires": [
+            [
+                "bb2cac2b8ab19576"
+            ]
+        ]
+    },
+    {
+        "id": "bb2cac2b8ab19576",
+        "type": "ui-text-input",
+        "z": "b1cb8d2091eb6c02",
+        "group": "1ef18b1110bc55e6",
+        "name": "Zellkonstante",
+        "label": "Zellkonstante",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "topic": "topic",
+        "topicType": "msg",
+        "mode": "number",
+        "tooltip": "",
+        "delay": 300,
+        "passthru": true,
+        "sendOnDelay": false,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "clearable": false,
+        "sendOnClear": false,
+        "icon": "",
+        "iconPosition": "left",
+        "iconInnerPosition": "inside",
+        "x": 680,
+        "y": 200,
+        "wires": [
+            [
+                "6951930284b74c37"
+            ]
+        ]
+    },
+    {
+        "id": "40ce302fdafbff3f",
+        "type": "debug",
+        "z": "b1cb8d2091eb6c02",
+        "name": "debug 10",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1160,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "6951930284b74c37",
+        "type": "function",
+        "z": "b1cb8d2091eb6c02",
+        "name": "set CELL_CONSTANT",
+        "func": "let value = parseFloat(msg.payload);  // String in eine Zahl umwandeln\nif (!isNaN(value)) {\n    value = parseFloat(value.toFixed(4));  // Auf 4 Nachkommastellen begrenzen\n    global.set(\"CELL_CONSTANT\", value);\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 200,
+        "wires": [
+            [
+                "40ce302fdafbff3f"
             ]
         ]
     },
