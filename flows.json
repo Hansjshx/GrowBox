@@ -33,7 +33,7 @@
         "z": "691b89143e2e3469",
         "name": "",
         "debug": false,
-        "autoname": "19:00:00 + 18:00:00",
+        "autoname": "19:00:00 + 12:00:00",
         "tag": "eztimer",
         "topic": "",
         "suspended": false,
@@ -57,7 +57,7 @@
         "offtype": "3",
         "offtimesun": "dusk",
         "offtimetod": "dusk",
-        "offduration": "18:00:00",
+        "offduration": "12:00:00",
         "offpropertytype": "msg",
         "offproperty": "payload",
         "offvaluetype": "bool",
@@ -116,7 +116,7 @@
         "id": "b80fdff3981bc21e",
         "type": "inject",
         "z": "691b89143e2e3469",
-        "name": "18h",
+        "name": "12h",
         "props": [
             {
                 "p": "payload"
@@ -127,7 +127,7 @@
         "once": true,
         "onceDelay": "0.4",
         "topic": "",
-        "payload": "18:00:00",
+        "payload": "12:00:00",
         "payloadType": "str",
         "x": 110,
         "y": 880,
@@ -394,7 +394,7 @@
         "type": "function",
         "z": "691b89143e2e3469",
         "name": "Lichtstärke",
-        "func": "msg.payload = msg.payload.BH1750.Illuminance;\nmsg.topic = \"Lichtstärke\";\nreturn msg;\n",
+        "func": "msg.payload = Math.round(msg.payload.BH1750.Illuminance * 1.5813953488);\nmsg.topic = \"Lichtstärke\";\nreturn msg;\n",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -407,7 +407,7 @@
             [
                 "b49d2ca6521a28ca",
                 "86b31eff6b66ec4a",
-                "75740d42498e2c8c"
+                "fcf8e5e447584bf3"
             ]
         ]
     },
@@ -499,8 +499,8 @@
         "topic": "",
         "payload": "[]",
         "payloadType": "json",
-        "x": 400,
-        "y": 1460,
+        "x": 1120,
+        "y": 1420,
         "wires": [
             [
                 "965aab5f2e216386",
@@ -616,7 +616,7 @@
         "type": "function",
         "z": "691b89143e2e3469",
         "name": "SVP/VPD berechnen",
-        "func": "let T_air = msg.payload.Temperature || 25; // Standardwert 25°C\nlet T_leaf = T_air - 2; // Blatttemperatur = Lufttemperatur - 2°C\nlet RH = msg.payload.Humidity; // Luftfeuchtigkeit runden, ggf. runden mit Math.round(RH)\n\n// Berechnung des Sättigungsdampfdrucks\nlet SVP_air = 0.611 * Math.exp((17.502 * T_air) / (T_air + 240.97)); // Sättigungsdampfdruck der Luft\nlet SVP_leaf = 0.611 * Math.exp((17.502 * T_leaf) / (T_leaf + 240.97)); // Sättigungsdampfdruck der Blätter\n\n// Berechnung des tatsächlichen Dampfdrucks (AVP)\nlet AVP = SVP_air * (RH / 100);\n\n// Berechnung des Dampfdruckdefizits (VPD)\nlet VPD = SVP_leaf - AVP; // VPD = SVP_leaf - AVP\n\n// Rückgabe von msg.payload\nmsg.payload = {\n    air_temp: T_air,\n    leaf_temp: T_leaf,\n    humidity: RH,\n    svp_air: SVP_air.toFixed(3),\n    svp_leaf: SVP_leaf.toFixed(3),\n    vpd: VPD.toFixed(3)\n};\n\n// Setze den VPD-Wert als globale Variable\nglobal.set(\"vpd\", msg.payload.vpd);\n\nreturn msg;",
+        "func": "let T_air = msg.payload.Temperature || 25; // Standardwert 25°C\nlet T_leaf = T_air; // LED Luft=Blatt - 2; // Blatttemperatur = Lufttemperatur - 2°C\nlet RH = msg.payload.Humidity; // Luftfeuchtigkeit runden, ggf. runden mit Math.round(RH)\n\n// Berechnung des Sättigungsdampfdrucks\nlet SVP_air = 0.611 * Math.exp((17.502 * T_air) / (T_air + 240.97)); // Sättigungsdampfdruck der Luft\nlet SVP_leaf = 0.611 * Math.exp((17.502 * T_leaf) / (T_leaf + 240.97)); // Sättigungsdampfdruck der Blätter\n\n// Berechnung des tatsächlichen Dampfdrucks (AVP)\nlet AVP = SVP_air * (RH / 100);\n\n// Berechnung des Dampfdruckdefizits (VPD)\nlet VPD = SVP_leaf - AVP; // VPD = SVP_leaf - AVP\n\n// Rückgabe von msg.payload\nmsg.payload = {\n    air_temp: T_air,\n    leaf_temp: T_leaf,\n    humidity: RH,\n    svp_air: SVP_air.toFixed(3),\n    svp_leaf: SVP_leaf.toFixed(3),\n    vpd: VPD.toFixed(3)\n};\n\n// Setze den VPD-Wert als globale Variable\nglobal.set(\"vpd\", msg.payload.vpd);\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -681,7 +681,7 @@
         "type": "function",
         "z": "691b89143e2e3469",
         "name": "TDS berechnen",
-        "func": "var voltage = msg.payload.ADS1115.A0;\nvar temperature = msg.payload.DS18B20.Temperature;\n//const VREF = 3.3;\nconst VREF = 5.0;\n\nconst CELL_CONSTANT = global.get(\"CELL_CONSTANT\") || 6.718;\n\n//const CELL_CONSTANT = 6.718; // Kalibrierte Zellkonstante für Sonde\nconst TDS_CONVERSION_FACTOR = 0.5; // Umrechnungsfaktor für Düngerlösungen\n\n// EC-Wert berechnen (Spannung zur Leitfähigkeit)\nconst ecMeasured = voltage / CELL_CONSTANT;\n\n// Temperaturkompensation auf 25°C\nconst ecCompensated = ecMeasured / (1 + 0.02 * (temperature - 25));\n\n// TDS-Berechnung\nconst tdsValue = ecCompensated * TDS_CONVERSION_FACTOR;\n\nconsole.log(`Temperatur: ${temperature.toFixed(2)}°C`);\nconsole.log(`EC (kompensiert): ${ecCompensated.toFixed(2)} mS/cm`);\nconsole.log(`TDS-Wert: ${tdsValue.toFixed(2)} ppm`);\n\n\nmsg.payload.voltage = voltage;\nmsg.payload.tds = Math.round(tdsValue);\nmsg.payload.ec = Math.round(ecCompensated);\nmsg.payload.unit = \"ppm\";\nreturn msg;",
+        "func": "var voltage = msg.payload.ADS1115.A0;\nvar temperature = msg.payload.DS18B20.Temperature;\n//const VREF = 3.3;\nconst VREF = 5.0;\n\nconst CELL_CONSTANT = global.get(\"CELL_CONSTANT\") || 6.718;\n\n//const CELL_CONSTANT = 6.718; // Kalibrierte Zellkonstante für Sonde\nconst TDS_CONVERSION_FACTOR = 0.5; // Umrechnungsfaktor für Düngerlösungen\n\n// EC-Wert berechnen (Spannung zur Leitfähigkeit)\nconst ecMeasured = voltage / CELL_CONSTANT;\n\n// Temperaturkompensation auf 25°C\nconst ecCompensated = ecMeasured / (1 + 0.02 * (temperature - 25));\n\n// TDS-Berechnung\nconst tdsValue = ecCompensated * TDS_CONVERSION_FACTOR;\n\nconsole.log(`Temperatur: ${temperature.toFixed(2)}°C`);\nconsole.log(`EC (kompensiert): ${ecCompensated.toFixed(2)} mS/cm`);\nconsole.log(`TDS-Wert: ${tdsValue.toFixed(2)} ppm`);\n\n\nmsg.payload.voltage = voltage;\nmsg.payload.tds = Math.round(tdsValue);\nmsg.payload.ec = Math.round(ecCompensated);\nmsg.payload.unit = \"ppm\";\nglobal.set(\"ec\", Math.round(ecCompensated));\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -692,8 +692,7 @@
         "y": 1640,
         "wires": [
             [
-                "a20922f867eb4b84",
-                "83000ffee656196f"
+                "a20922f867eb4b84"
             ]
         ]
     },
@@ -702,7 +701,7 @@
         "type": "function",
         "z": "691b89143e2e3469",
         "name": "Füllstand berechnen",
-        "func": "// Rohwert des ADS1115\nvar rawValue = msg.payload.ADS1115.A1;\n\n// Min- und Max-Werte definieren\nconst min = 7890;  // Wert bei 100 %\nconst max = 11000; // Wert bei 50 %\n\n// Berechnung des Prozentsatzes\nlet percent = 50 + ((rawValue - max) / (min - max)) * 50;\n\n// Begrenzung des Prozentsatzes auf 0 bis 100\npercent = Math.max(0, Math.min(100, percent));\n\n// Runden auf ganzzahlige Werte\npercent = Math.round(percent);\n\n// Prozentsatz als neues Payload setzen\n//msg.payload = percent;\n\n// Ausgabe der Nachricht\n\nmsg.payload.level = percent;\nmsg.payload.raw = rawValue;\nmsg.payload.unit = \"%\";\nmsg.topic = \"Level\";\nreturn msg;",
+        "func": "// Rohwert des ADS1115\nvar rawValue = msg.payload.ADS1115.A1;\n\n// Min- und Max-Werte definieren\nconst min = 7890;  // Wert bei 100 %\nconst max = 11000; // Wert bei 50 %\n\n// Berechnung des Prozentsatzes\nlet percent = 50 + ((rawValue - max) / (min - max)) * 50;\n\n// Begrenzung des Prozentsatzes auf 0 bis 100\npercent = Math.max(0, Math.min(100, percent));\n\n// Runden auf ganzzahlige Werte\npercent = Math.round(percent);\n\n// Prozentsatz als neues Payload setzen\n//msg.payload = percent;\n\n// Ausgabe der Nachricht\n\nmsg.payload.level = percent;\nmsg.payload.raw = rawValue;\nmsg.payload.unit = \"%\";\nmsg.topic = \"Level\";\nglobal.set(\"level\", percent);\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -735,7 +734,7 @@
             [
                 "3f8052fc5cdc9214",
                 "f1733dbdbccf8940",
-                "8e412a600e8054dc"
+                "001e7c2bc40794bf"
             ]
         ]
     },
@@ -757,8 +756,8 @@
             [
                 "ae9225f7340334d9",
                 "0d11ed4ec7265338",
-                "35b64aee757273e4",
-                "b585639f7ac39c8e"
+                "b585639f7ac39c8e",
+                "001e7c2bc40794bf"
             ]
         ]
     },
@@ -1001,8 +1000,8 @@
         "topic": "",
         "payload": "[]",
         "payloadType": "json",
-        "x": 1160,
-        "y": 220,
+        "x": 1440,
+        "y": 140,
         "wires": [
             [
                 "2909ebdb02bd6d4b"
@@ -1161,7 +1160,7 @@
         "height": 8,
         "className": "",
         "interpolation": "bezier",
-        "x": 1510,
+        "x": 1590,
         "y": 200,
         "wires": [
             []
@@ -1269,26 +1268,6 @@
         ]
     },
     {
-        "id": "8e412a600e8054dc",
-        "type": "rbe",
-        "z": "691b89143e2e3469",
-        "name": "",
-        "func": "rbe",
-        "gap": "",
-        "start": "",
-        "inout": "out",
-        "septopics": false,
-        "property": "payload",
-        "topi": "topic",
-        "x": 1210,
-        "y": 280,
-        "wires": [
-            [
-                "2909ebdb02bd6d4b"
-            ]
-        ]
-    },
-    {
         "id": "c5d0eb479be70ab7",
         "type": "rbe",
         "z": "691b89143e2e3469",
@@ -1307,39 +1286,19 @@
         ]
     },
     {
-        "id": "35b64aee757273e4",
-        "type": "rbe",
-        "z": "691b89143e2e3469",
-        "name": "",
-        "func": "rbe",
-        "gap": "",
-        "start": "",
-        "inout": "out",
-        "septopics": false,
-        "property": "payload",
-        "topi": "topic",
-        "x": 1210,
-        "y": 320,
-        "wires": [
-            [
-                "2909ebdb02bd6d4b"
-            ]
-        ]
-    },
-    {
         "id": "001e7c2bc40794bf",
         "type": "rbe",
         "z": "691b89143e2e3469",
         "name": "",
-        "func": "rbe",
-        "gap": "",
+        "func": "deadband",
+        "gap": "0.5%",
         "start": "",
         "inout": "out",
-        "septopics": false,
+        "septopics": true,
         "property": "payload",
         "topi": "topic",
-        "x": 1370,
-        "y": 140,
+        "x": 1110,
+        "y": 220,
         "wires": [
             [
                 "2909ebdb02bd6d4b"
@@ -1492,7 +1451,7 @@
         "z": "691b89143e2e3469",
         "name": "EC",
         "group": "1ef18b1110bc55e6",
-        "order": 6,
+        "order": 8,
         "width": 3,
         "height": 3,
         "gtype": "gauge-34",
@@ -1581,7 +1540,8 @@
         "wires": [
             [
                 "63a2bd6aecc958ac",
-                "c641117d79d2314c"
+                "834380afcb39589a",
+                "80ce486ea5c2ff17"
             ]
         ]
     },
@@ -1591,7 +1551,7 @@
         "z": "691b89143e2e3469",
         "name": "Füllstand",
         "group": "1ef18b1110bc55e6",
-        "order": 5,
+        "order": 7,
         "width": 3,
         "height": 3,
         "gtype": "gauge-34",
@@ -1683,7 +1643,7 @@
         "height": "8",
         "className": "",
         "interpolation": "bezier",
-        "x": 1270,
+        "x": 1410,
         "y": 1680,
         "wires": [
             []
@@ -1722,13 +1682,6 @@
                 "pt": "msg",
                 "to": "%",
                 "tot": "str"
-            },
-            {
-                "t": "set",
-                "p": "level",
-                "pt": "global",
-                "to": "payload.level",
-                "tot": "msg"
             }
         ],
         "action": "",
@@ -1741,7 +1694,9 @@
         "wires": [
             [
                 "a7292c43124af535",
-                "834380afcb39589a"
+                "834380afcb39589a",
+                "26d569763e916651",
+                "a5456f053cb0b788"
             ]
         ]
     },
@@ -1776,8 +1731,8 @@
         "wires": [
             [
                 "770a8f1a681c576d",
-                "2e3b0f30f3a6dbfd",
-                "53270897fe7736bf"
+                "53270897fe7736bf",
+                "834380afcb39589a"
             ]
         ]
     },
@@ -1787,7 +1742,7 @@
         "z": "691b89143e2e3469",
         "name": "Temperatur",
         "group": "1ef18b1110bc55e6",
-        "order": 7,
+        "order": 9,
         "width": 3,
         "height": 3,
         "gtype": "gauge-34",
@@ -1981,7 +1936,7 @@
         "type": "function",
         "z": "691b89143e2e3469",
         "name": "url VPDChart erzeugen ",
-        "func": "let airTemp = msg.payload.BME280.Temperature || 25; // Standardwert 25°C\nlet leafTemp = airTemp - 2; // Blatttemperatur = Lufttemperatur - 2°C\nlet humidity = msg.payload.BME280.Humidity || 50; // Standardwert 50%\n\n\n\nlet url = `https://vpdchart.com/#C,${humidity},${airTemp},${leafTemp},0`;\nmsg.src = url;\nreturn msg;",
+        "func": "let airTemp = msg.payload.BME280.Temperature || 25; // Standardwert 25°C\nlet leafTemp = airTemp; // LED Luft=Blatt - 2; // Blatttemperatur = Lufttemperatur - 2°C\nlet humidity = msg.payload.BME280.Humidity || 50; // Standardwert 50%\n\n\n\nlet url = `https://vpdchart.com/#C,${humidity},${airTemp},${leafTemp},0`;\nmsg.src = url;\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -2003,9 +1958,9 @@
         "name": "MotionEye",
         "group": "b0de33abd4914424",
         "order": 3,
-        "src": "http://192.168.178.36:8084",
+        "src": "http://192.168.178.36:8081",
         "width": "2",
-        "height": "4",
+        "height": "8",
         "x": 630,
         "y": 580,
         "wires": []
@@ -2440,15 +2395,15 @@
         "type": "debug",
         "z": "691b89143e2e3469",
         "name": "debug 5",
-        "active": false,
+        "active": true,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 580,
-        "y": 1580,
+        "x": 700,
+        "y": 1880,
         "wires": []
     },
     {
@@ -2563,39 +2518,19 @@
         ]
     },
     {
-        "id": "75740d42498e2c8c",
-        "type": "rbe",
-        "z": "691b89143e2e3469",
-        "name": "",
-        "func": "rbe",
-        "gap": "",
-        "start": "",
-        "inout": "out",
-        "septopics": false,
-        "property": "payload",
-        "topi": "topic",
-        "x": 770,
-        "y": 1560,
-        "wires": [
-            [
-                "16a1fb89e051b85d"
-            ]
-        ]
-    },
-    {
         "id": "fcf8e5e447584bf3",
         "type": "rbe",
         "z": "691b89143e2e3469",
         "name": "",
-        "func": "rbe",
-        "gap": "",
+        "func": "deadband",
+        "gap": "0.5%",
         "start": "",
         "inout": "out",
-        "septopics": false,
+        "septopics": true,
         "property": "payload",
         "topi": "topic",
-        "x": 990,
-        "y": 1540,
+        "x": 890,
+        "y": 1560,
         "wires": [
             [
                 "16a1fb89e051b85d"
@@ -2623,58 +2558,18 @@
         ]
     },
     {
-        "id": "c641117d79d2314c",
-        "type": "rbe",
-        "z": "691b89143e2e3469",
-        "name": "",
-        "func": "rbe",
-        "gap": "",
-        "start": "",
-        "inout": "out",
-        "septopics": false,
-        "property": "payload",
-        "topi": "topic",
-        "x": 970,
-        "y": 1660,
-        "wires": [
-            [
-                "965aab5f2e216386"
-            ]
-        ]
-    },
-    {
-        "id": "2e3b0f30f3a6dbfd",
-        "type": "rbe",
-        "z": "691b89143e2e3469",
-        "name": "",
-        "func": "rbe",
-        "gap": "",
-        "start": "",
-        "inout": "out",
-        "septopics": false,
-        "property": "payload",
-        "topi": "topic",
-        "x": 710,
-        "y": 1740,
-        "wires": [
-            [
-                "965aab5f2e216386"
-            ]
-        ]
-    },
-    {
         "id": "834380afcb39589a",
         "type": "rbe",
         "z": "691b89143e2e3469",
         "name": "",
-        "func": "rbe",
-        "gap": "",
+        "func": "deadband",
+        "gap": "0.5%",
         "start": "",
         "inout": "out",
-        "septopics": false,
+        "septopics": true,
         "property": "payload",
         "topi": "topic",
-        "x": 950,
+        "x": 990,
         "y": 1700,
         "wires": [
             [
@@ -3041,6 +2936,85 @@
         ]
     },
     {
+        "id": "5441f52451465344",
+        "type": "change",
+        "z": "691b89143e2e3469",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 990,
+        "y": 1900,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "26d569763e916651",
+        "type": "influxdb out",
+        "z": "691b89143e2e3469",
+        "influxdb": "b86d63f3f59dd4c8",
+        "name": "",
+        "measurement": "level",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "organisation",
+        "bucket": "bucket",
+        "x": 1320,
+        "y": 1960,
+        "wires": []
+    },
+    {
+        "id": "a5456f053cb0b788",
+        "type": "function",
+        "z": "691b89143e2e3469",
+        "name": "function 15",
+        "func": "global.set(\"level\", msg.payload)\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1170,
+        "y": 1780,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "80ce486ea5c2ff17",
+        "type": "influxdb out",
+        "z": "691b89143e2e3469",
+        "influxdb": "b86d63f3f59dd4c8",
+        "name": "",
+        "measurement": "ec",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "organisation",
+        "bucket": "bucket",
+        "x": 1290,
+        "y": 1880,
+        "wires": []
+    },
+    {
         "id": "e3fb437742ef714e",
         "type": "tab",
         "label": "Lüftung",
@@ -3180,7 +3154,7 @@
         "type": "debug",
         "z": "e3fb437742ef714e",
         "name": "debug 99",
-        "active": true,
+        "active": false,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
@@ -3735,7 +3709,8 @@
         "y": 1160,
         "wires": [
             [
-                "062d6b7526c1c316"
+                "062d6b7526c1c316",
+                "b468a7689b29c824"
             ]
         ]
     },
@@ -4566,6 +4541,291 @@
         ]
     },
     {
+        "id": "f67f6da3ad99922c",
+        "type": "comment",
+        "z": "e3fb437742ef714e",
+        "name": "Ventilator",
+        "info": "",
+        "x": 100,
+        "y": 1280,
+        "wires": []
+    },
+    {
+        "id": "c602fbf5a9d1a39c",
+        "type": "ui-text",
+        "z": "e3fb437742ef714e",
+        "group": "25d83088be3ee194",
+        "order": 13,
+        "width": 0,
+        "height": 0,
+        "name": "Ventilator",
+        "label": "Ventilator",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#717171",
+        "wrapText": false,
+        "className": "",
+        "x": 260,
+        "y": 1280,
+        "wires": []
+    },
+    {
+        "id": "05dcbd42258639b0",
+        "type": "ui-switch",
+        "z": "e3fb437742ef714e",
+        "name": "Ventilator",
+        "label": "Ventilator",
+        "group": "25d83088be3ee194",
+        "order": 15,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "decouple": true,
+        "topic": "topic",
+        "topicType": "msg",
+        "style": "",
+        "className": "",
+        "layout": "row-spread",
+        "clickableArea": "switch",
+        "onvalue": "true",
+        "onvalueType": "bool",
+        "onicon": "",
+        "oncolor": "",
+        "offvalue": "false",
+        "offvalueType": "bool",
+        "officon": "",
+        "offcolor": "",
+        "x": 340,
+        "y": 1360,
+        "wires": [
+            [
+                "79ae0d55af0fc238",
+                "1cd69c5a52946156"
+            ]
+        ]
+    },
+    {
+        "id": "10b86789dec94024",
+        "type": "deconz-input",
+        "z": "e3fb437742ef714e",
+        "name": "",
+        "topic": "",
+        "config_version": 2,
+        "server": "ceede262f965aceb",
+        "statustext": "",
+        "statustext_type": "default",
+        "search_type": "device",
+        "device_list": [
+            "lights/uniqueid/a4:c1:38:9e:12:6c:7e:7c-01"
+        ],
+        "device_name": "",
+        "query": "{}",
+        "outputs": 1,
+        "output_rules": [
+            {
+                "type": "state",
+                "format": "single",
+                "output": "onchange",
+                "onstart": true,
+                "payload": [
+                    "on"
+                ]
+            }
+        ],
+        "x": 130,
+        "y": 1400,
+        "wires": [
+            [
+                "829257540c40e6dd"
+            ]
+        ]
+    },
+    {
+        "id": "829257540c40e6dd",
+        "type": "ui-led",
+        "z": "e3fb437742ef714e",
+        "name": "Status",
+        "group": "25d83088be3ee194",
+        "order": 14,
+        "width": 0,
+        "height": 0,
+        "label": "Status",
+        "labelPlacement": "left",
+        "labelAlignment": "left",
+        "states": [
+            {
+                "value": "false",
+                "valueType": "bool",
+                "color": "#ff0000"
+            },
+            {
+                "value": "true",
+                "valueType": "bool",
+                "color": "#00ff00"
+            }
+        ],
+        "allowColorForValueInMessage": false,
+        "shape": "square",
+        "showBorder": false,
+        "showGlow": true,
+        "x": 290,
+        "y": 1420,
+        "wires": []
+    },
+    {
+        "id": "79ae0d55af0fc238",
+        "type": "debug",
+        "z": "e3fb437742ef714e",
+        "name": "debug 12",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 680,
+        "y": 1500,
+        "wires": []
+    },
+    {
+        "id": "fbba56456e1b26ed",
+        "type": "deconz-output",
+        "z": "e3fb437742ef714e",
+        "name": "",
+        "config_version": 2,
+        "server": "ceede262f965aceb",
+        "statustext": "",
+        "statustext_type": "auto",
+        "search_type": "device",
+        "device_list": [
+            "lights/uniqueid/a4:c1:38:9e:12:6c:7e:7c-01"
+        ],
+        "device_name": "",
+        "query": "{}",
+        "commands": [
+            {
+                "arg": {
+                    "on": {
+                        "type": "msg",
+                        "value": "payload"
+                    },
+                    "alert": {
+                        "type": "str",
+                        "value": ""
+                    },
+                    "effect": {
+                        "type": "str",
+                        "value": ""
+                    },
+                    "colorloopspeed": {
+                        "type": "num",
+                        "value": ""
+                    },
+                    "transitiontime": {
+                        "type": "num",
+                        "value": ""
+                    },
+                    "retryonerror": {
+                        "type": "num",
+                        "value": "0"
+                    },
+                    "aftererror": {
+                        "type": "continue",
+                        "value": ""
+                    },
+                    "bri": {
+                        "direction": "set",
+                        "type": "num",
+                        "value": ""
+                    },
+                    "sat": {
+                        "direction": "set",
+                        "type": "num",
+                        "value": ""
+                    },
+                    "hue": {
+                        "direction": "set",
+                        "type": "num",
+                        "value": ""
+                    },
+                    "ct": {
+                        "direction": "set",
+                        "type": "num",
+                        "value": ""
+                    },
+                    "xy": {
+                        "direction": "set",
+                        "type": "json",
+                        "value": "[]"
+                    }
+                },
+                "type": "deconz_state",
+                "domain": "lights"
+            }
+        ],
+        "specific": {
+            "delay": {
+                "type": "num",
+                "value": "50"
+            },
+            "result": {
+                "type": "at_end",
+                "value": ""
+            }
+        },
+        "x": 670,
+        "y": 1360,
+        "wires": [
+            [
+                "79ae0d55af0fc238"
+            ]
+        ]
+    },
+    {
+        "id": "b468a7689b29c824",
+        "type": "function",
+        "z": "e3fb437742ef714e",
+        "name": "function 14",
+        "func": "const tag = global.get(\"licht\");\nmsg.payload = tag;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 170,
+        "y": 1340,
+        "wires": [
+            [
+                "05dcbd42258639b0"
+            ]
+        ]
+    },
+    {
+        "id": "1cd69c5a52946156",
+        "type": "rbe",
+        "z": "e3fb437742ef714e",
+        "name": "",
+        "func": "rbe",
+        "gap": "",
+        "start": "",
+        "inout": "out",
+        "septopics": true,
+        "property": "payload",
+        "topi": "topic",
+        "x": 510,
+        "y": 1360,
+        "wires": [
+            [
+                "fbba56456e1b26ed"
+            ]
+        ]
+    },
+    {
         "id": "b1cb8d2091eb6c02",
         "type": "tab",
         "label": "Nährlösung",
@@ -4591,7 +4851,8 @@
                 "ad58679c20448e9e",
                 "cbb4da323644b0f1",
                 "e4e5fcbc95236a06",
-                "6c1832c4be830aad"
+                "6c1832c4be830aad",
+                "3c25129938af06ec"
             ]
         ]
     },
@@ -5344,7 +5605,8 @@
                 "571fd068fb6a7d4e",
                 "39c1c21876202b4a",
                 "d34d0f4d3587f5fc",
-                "544ab01d33c225a3"
+                "544ab01d33c225a3",
+                "0bad8b04931cb0e3"
             ]
         ]
     },
@@ -5364,16 +5626,17 @@
         ],
         "repeat": "",
         "crontab": "",
-        "once": true,
+        "once": false,
         "onceDelay": 0.1,
         "topic": "",
-        "payload": "START",
+        "payload": "STOP",
         "payloadType": "str",
-        "x": 200,
-        "y": 860,
+        "x": 210,
+        "y": 980,
         "wires": [
             [
-                "9b1db7b2083dbfb2"
+                "6ca3d35a8275d516",
+                "bcac467016c163e7"
             ]
         ]
     },
@@ -5603,7 +5866,7 @@
         "type": "function",
         "z": "b1cb8d2091eb6c02",
         "name": "global Wartezeit lesen",
-        "func": "let sprudlerwartezeit = Number(global.get(\"sprudlerwartezeit\"));\nmsg.payload = sprudlerwartezeit\nreturn msg;",
+        "func": "if(msg.payload == \"START\")\n{\nconst sprudlerwartezeit = Number(global.get(\"sprudlerwartezeit\"));\nmsg.payload = sprudlerwartezeit\n};\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -6006,7 +6269,7 @@
         "group": "1ef18b1110bc55e6",
         "name": "Anfangsleitfähigkeit",
         "label": "Anfangsleitfähigkeit",
-        "order": 3,
+        "order": 4,
         "width": 0,
         "height": 0,
         "topic": "topic",
@@ -6552,7 +6815,7 @@
         "group": "1ef18b1110bc55e6",
         "name": "Zellkonstante",
         "label": "Zellkonstante",
-        "order": 4,
+        "order": 6,
         "width": 0,
         "height": 0,
         "topic": "topic",
@@ -6590,8 +6853,8 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1160,
-        "y": 100,
+        "x": 520,
+        "y": 580,
         "wires": []
     },
     {
@@ -6609,8 +6872,430 @@
         "x": 900,
         "y": 200,
         "wires": [
+            []
+        ]
+    },
+    {
+        "id": "cb35b2b08146b1e5",
+        "type": "inject",
+        "z": "b1cb8d2091eb6c02",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "2",
+        "topic": "",
+        "payload": "STOP",
+        "payloadType": "str",
+        "x": 190,
+        "y": 1060,
+        "wires": [
             [
-                "40ce302fdafbff3f"
+                "6ca3d35a8275d516",
+                "bcac467016c163e7"
+            ]
+        ]
+    },
+    {
+        "id": "a0cc0f3a18d86d6d",
+        "type": "ui-text-input",
+        "z": "b1cb8d2091eb6c02",
+        "group": "1ef18b1110bc55e6",
+        "name": "letzter pH-Wert",
+        "label": "letzter pH-Wert",
+        "order": 5,
+        "width": 0,
+        "height": 0,
+        "topic": "phwert",
+        "topicType": "global",
+        "mode": "number",
+        "tooltip": "",
+        "delay": 300,
+        "passthru": true,
+        "sendOnDelay": false,
+        "sendOnBlur": true,
+        "sendOnEnter": true,
+        "className": "",
+        "clearable": false,
+        "sendOnClear": false,
+        "icon": "",
+        "iconPosition": "left",
+        "iconInnerPosition": "inside",
+        "x": 680,
+        "y": 240,
+        "wires": [
+            [
+                "63990f1e4713a98c"
+            ]
+        ]
+    },
+    {
+        "id": "0bad8b04931cb0e3",
+        "type": "change",
+        "z": "b1cb8d2091eb6c02",
+        "name": "Zyklus setzen",
+        "rules": [
+            {
+                "t": "change",
+                "p": "payload",
+                "pt": "msg",
+                "from": "true",
+                "fromt": "bool",
+                "to": "1",
+                "tot": "num"
+            },
+            {
+                "t": "change",
+                "p": "payload",
+                "pt": "msg",
+                "from": "false",
+                "fromt": "bool",
+                "to": "0",
+                "tot": "num"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1140,
+        "y": 400,
+        "wires": [
+            [
+                "dc431ffc29a30a58"
+            ]
+        ]
+    },
+    {
+        "id": "f1e7b87d700ca0a5",
+        "type": "influxdb out",
+        "z": "b1cb8d2091eb6c02",
+        "influxdb": "b86d63f3f59dd4c8",
+        "name": "letzer pH",
+        "measurement": "ph",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "organisation",
+        "bucket": "bucket",
+        "x": 940,
+        "y": 400,
+        "wires": []
+    },
+    {
+        "id": "dc431ffc29a30a58",
+        "type": "influxdb out",
+        "z": "b1cb8d2091eb6c02",
+        "influxdb": "b86d63f3f59dd4c8",
+        "name": "Ebbe/Flut",
+        "measurement": "zyklus",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "organisation",
+        "bucket": "bucket",
+        "x": 1340,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "63990f1e4713a98c",
+        "type": "change",
+        "z": "b1cb8d2091eb6c02",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "$number(payload) ",
+                "tot": "jsonata"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 830,
+        "y": 360,
+        "wires": [
+            [
+                "f1e7b87d700ca0a5"
+            ]
+        ]
+    },
+    {
+        "id": "3c25129938af06ec",
+        "type": "influxdb in",
+        "z": "b1cb8d2091eb6c02",
+        "influxdb": "b86d63f3f59dd4c8",
+        "name": "letzten pH lesen",
+        "query": "SELECT LAST(value) AS value FROM ph;",
+        "rawOutput": false,
+        "precision": "",
+        "retentionPolicy": "",
+        "org": "organisation",
+        "x": 180,
+        "y": 220,
+        "wires": [
+            [
+                "b05356166d169d0f"
+            ]
+        ]
+    },
+    {
+        "id": "b05356166d169d0f",
+        "type": "function",
+        "z": "b1cb8d2091eb6c02",
+        "name": "function 16",
+        "func": "let ph = msg.payload[0].value;\nmsg.payload = ph;\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 430,
+        "y": 240,
+        "wires": [
+            [
+                "40ce302fdafbff3f",
+                "a0cc0f3a18d86d6d"
+            ]
+        ]
+    },
+    {
+        "id": "c1d3b8a0.b23f98",
+        "type": "tab",
+        "label": "Ebbe-Flut Analyse",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "a1e5f30b.72e3e",
+        "type": "influxdb in",
+        "z": "c1d3b8a0.b23f98",
+        "influxdb": "b86d63f3f59dd4c8",
+        "name": "EC-Wert aus InfluxDB",
+        "query": "SELECT mean(value) AS ec FROM ec WHERE time > now() - 12h GROUP BY time(1h) fill(previous)",
+        "rawOutput": false,
+        "precision": "",
+        "retentionPolicy": "",
+        "org": "",
+        "x": 200,
+        "y": 80,
+        "wires": [
+            [
+                "b234b95f.4f5c48"
+            ]
+        ]
+    },
+    {
+        "id": "a2e5f31b.72e4f",
+        "type": "influxdb in",
+        "z": "c1d3b8a0.b23f98",
+        "influxdb": "b86d63f3f59dd4c8",
+        "name": "Wasserstand aus InfluxDB",
+        "query": "SELECT mean(value) AS wasserstand FROM level WHERE time > now() - 24h GROUP BY time(1h) fill(previous)",
+        "rawOutput": false,
+        "precision": "",
+        "retentionPolicy": "",
+        "org": "",
+        "x": 220,
+        "y": 140,
+        "wires": [
+            [
+                "b234b95f.4f5c48"
+            ]
+        ]
+    },
+    {
+        "id": "a3e5f32c.72e5c",
+        "type": "influxdb in",
+        "z": "c1d3b8a0.b23f98",
+        "influxdb": "b86d63f3f59dd4c8",
+        "name": "pH-Wert aus InfluxDB",
+        "query": "SELECT value AS ph FROM ph \nWHERE time >= now() - 2d \nORDER BY time DESC \nLIMIT 4\n",
+        "rawOutput": false,
+        "precision": "",
+        "retentionPolicy": "",
+        "org": "",
+        "x": 240,
+        "y": 200,
+        "wires": [
+            [
+                "b234b95f.4f5c48",
+                "f01e56a3.4e6a38"
+            ]
+        ]
+    },
+    {
+        "id": "a4e5f33d.72e6d",
+        "type": "influxdb in",
+        "z": "c1d3b8a0.b23f98",
+        "influxdb": "b86d63f3f59dd4c8",
+        "name": "Zyklus aus InfluxDB",
+        "query": "SELECT last(value) AS zyklus FROM zyklus",
+        "rawOutput": false,
+        "precision": "",
+        "retentionPolicy": "",
+        "org": "",
+        "x": 300,
+        "y": 260,
+        "wires": [
+            [
+                "b234b95f.4f5c48"
+            ]
+        ]
+    },
+    {
+        "id": "b234b95f.4f5c48",
+        "type": "join",
+        "z": "c1d3b8a0.b23f98",
+        "name": "Daten zusammenfügen",
+        "mode": "custom",
+        "build": "array",
+        "property": "payload",
+        "propertyType": "msg",
+        "key": "topic",
+        "joiner": "\\n",
+        "timeout": "5",
+        "count": "4",
+        "reduceRight": false,
+        "x": 520,
+        "y": 180,
+        "wires": [
+            [
+                "c91b01d3.4c1d6",
+                "f01e56a3.4e6a38"
+            ]
+        ]
+    },
+    {
+        "id": "c91b01d3.4c1d6",
+        "type": "function",
+        "z": "c1d3b8a0.b23f98",
+        "name": "Analyse der Messwerte",
+        "func": "// 📊 Hilfsfunktion: Lineare Regression zur Berechnung der Trend-Steigung\nfunction berechneTrend(daten, feld) {\n    if (daten.length < 2) return 0; // Zu wenige Daten für Trend\n\n    let n = daten.length;\n    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;\n\n    for (let i = 0; i < n; i++) {\n        let x = i; // Zeitindex\n        let y = Number(daten[i][feld]); // Messwert (z. B. wasserstand, ec, ph)\n        if (isNaN(y)) return 0; // Fehlerhafte Werte ignorieren\n        sumX += x;\n        sumY += y;\n        sumXY += x * y;\n        sumX2 += x * x;\n    }\n\n    // Steigung m der linearen Regression: m = (n * Σxy - Σx * Σy) / (n * Σx² - (Σx)²)\n    let m = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);\n    return m;\n}\n\n// 📥 Daten aus dem Payload extrahieren\nlet zyklus = null, phDaten = [], wasserstandDaten = [], ecDaten = [];\n\nmsg.payload.forEach(arr => {\n    if (Array.isArray(arr) && arr.length > 0) {\n        if ('zyklus' in arr[0]) zyklus = arr[0].zyklus;\n        if ('ph' in arr[0]) phDaten = arr;\n        if ('wasserstand' in arr[0]) wasserstandDaten = arr;\n        if ('ec' in arr[0]) ecDaten = arr;\n    }\n});\n\n// 📌 Sicherheitsprüfung: Fehlende Daten abfangen\nif (zyklus === null) zyklus = true;\nif (!wasserstandDaten.length || !ecDaten.length || !phDaten.length) {\n    msg.payload = { status: \"Fehlende Daten für Analyse\" };\n    return msg;\n}\n\n// 📊 Analyse nur bei \"zyklus = false\" (Pumpe AUS)\nif (zyklus) {\n    msg.payload = { status: \"Flut-Zyklus aktiv, keine Analyse.\" };\n    return msg;\n}\n\n// 📈 Lineare Trendberechnung für Wasserstand, EC und pH-Wert\nlet wasserstandTrend = berechneTrend(wasserstandDaten, \"wasserstand\");\nlet ecTrend = berechneTrend(ecDaten, \"ec\");\n\n// Prüfen, ob genug pH-Werte für eine Trendberechnung existieren\nlet phTrend = phDaten.length > 1 ? berechneTrend(phDaten, \"ph\") : 0;\n\n// Trend-Klassifikation für pH-Wert\nlet phStatus = phTrend > 0.05 ? \"steigend\" : phTrend < -0.05 ? \"fallend\" : \"statisch\";\n\n\n// 📊 Trend-Klassifikation\nlet wasserstandStatus = wasserstandTrend > 0.5 ? \"steigend\" : wasserstandTrend < -0.5 ? \"fallend\" : \"statisch\";\nlet ecStatus = ecTrend > 0.5 ? \"steigend\" : ecTrend < -0.5 ? \"fallend\" : \"statisch\";\n\n// 📋 Diagnose & Problemerkennung (vollständig aus CSV)\nlet status = \"\";\n\nif (wasserstandStatus === \"statisch\" && ecStatus === \"statisch\" && phStatus === \"statisch\") {\n    status = \"Die Pflanze nimmt nichts auf, wechsle die Nährlösung.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"statisch\" && phStatus === \"steigend\") {\n    status = \"Die Pflanze nimmt Wasser auf, aber keine Nährstoffe. Erhöhe die Nährstoffkonzentration.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"statisch\" && phStatus === \"fallend\") {\n    status = \"Die Pflanze nimmt Nährstoffe auf, aber kaum Wasser.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"steigend\" && phStatus === \"statisch\") {\n    status = \"Salzgehalt steigend, möglicherweise durch Verdunstung oder zu starke Düngung. Füge Wasser hinzu.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"steigend\" && phStatus === \"steigend\") {\n    status = \"Die Pflanze nimmt keine Nährstoffe auf, Salzgehalt steigend, möglicherweise Nährstoffblockade. Spüle mit klarem Wasser und passe die Nährlösung an.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"steigend\" && phStatus === \"fallend\") {\n    status = \"Nährstoffaufnahme, aber pH-Wert sinkt. Überprüfe die Pufferkapazität der Nährlösung.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"fallend\" && phStatus === \"statisch\") {\n    status = \"Die Pflanze nimmt weniger Nährstoffe auf, möglicherweise Unterversorgung. Erhöhe die Nährstoffkonzentration leicht.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"fallend\" && phStatus === \"steigend\") {\n    status = \"Die Pflanze nimmt Wasser auf, aber kaum Nährstoffe. Erhöhe die Nährstoffkonzentration.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"fallend\" && phStatus === \"fallend\") {\n    status = \"Pflanze nimmt Nährstoffe auf, aber die Nährlösung könnte zu stark verdünnt sein. Überprüfe die Düngung.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"statisch\" && phStatus === \"statisch\") {\n    status = \"Pflanze trinkt und nimmt Nährstoffe im gleichen Verhältnis auf, keine Änderung nötig.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"statisch\" && phStatus === \"steigend\") {\n    status = \"Pflanze trinkt, aber nimmt nicht genug Nährstoffe auf. Erhöhe die Nährstoffkonzentration.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"statisch\" && phStatus === \"fallend\") {\n    status = \"Pflanze nimmt zu viele Nährstoffe auf, EC senken.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"steigend\" && phStatus === \"statisch\") {\n    status = \"Zu viel Salz im Wasser, EC reduzieren, frisches Wasser hinzufügen.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"steigend\" && phStatus === \"steigend\") {\n    status = \"Nährstoffkonzentration steigend, möglicherweise Blockade. Spüle das System und passe die Nährlösung an.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"steigend\" && phStatus === \"fallend\") {\n    status = \"EC steigend, pH fallend, mögliche Überdüngung. Spüle und senke die EC leicht.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"fallend\" && phStatus === \"statisch\") {\n    status = \"Pflanze nimmt mehr Nährstoffe auf als Wasser. Möglicherweise Unterversorgung. EC leicht erhöhen.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"fallend\" && phStatus === \"steigend\") {\n    status = \"Pflanze trinkt, aber nimmt wenig Nährstoffe auf. Erhöhe die Nährstoffkonzentration.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"fallend\" && phStatus === \"fallend\") {\n    status = \"Nährstoffkonzentration zu niedrig, EC leicht erhöhen.\";\n} else {\n    status = \"Überprüfe die Wurzeln, möglicherweise sterben sie ab.\";\n}\n\n\n\n// 📤 Ergebnis zurückgeben\nmsg.payload = {\n    status: status,\n    trends: { wasserstand: wasserstandStatus, ec: ecStatus, ph: phStatus },\n    wasserstandTrend, ecTrend, phTrend,\n    zyklus\n};\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 760,
+        "y": 180,
+        "wires": [
+            [
+                "f01e56a3.4e6a38",
+                "402254b745a2c4ae"
+            ]
+        ]
+    },
+    {
+        "id": "f01e56a3.4e6a38",
+        "type": "debug",
+        "z": "c1d3b8a0.b23f98",
+        "name": "Debug-Ausgabe",
+        "active": true,
+        "complete": "payload",
+        "x": 1080,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "c7aac4f8831cae7c",
+        "type": "inject",
+        "z": "c1d3b8a0.b23f98",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "30",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 110,
+        "y": 320,
+        "wires": [
+            [
+                "a4e5f33d.72e6d",
+                "a3e5f32c.72e5c",
+                "a2e5f31b.72e4f",
+                "a1e5f30b.72e3e"
+            ]
+        ]
+    },
+    {
+        "id": "e95ab4039d5e5f7d",
+        "type": "ui-text",
+        "z": "c1d3b8a0.b23f98",
+        "group": "1ef18b1110bc55e6",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "name": "Zustand",
+        "label": "Zustand",
+        "format": "{{msg.payload}}",
+        "layout": "col-center",
+        "style": true,
+        "font": "Arial Narrow,Nimbus Sans L,sans-serif",
+        "fontSize": "12",
+        "color": "#717171",
+        "wrapText": true,
+        "className": "",
+        "x": 1140,
+        "y": 60,
+        "wires": []
+    },
+    {
+        "id": "402254b745a2c4ae",
+        "type": "change",
+        "z": "c1d3b8a0.b23f98",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.status",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 930,
+        "y": 60,
+        "wires": [
+            [
+                "e95ab4039d5e5f7d"
             ]
         ]
     },
@@ -7622,6 +8307,21 @@
         "instancehash": "sd542jjmkicea7u1j6glzwdf1m47bmbzzgaswyw16o6wpcac342evqhk9riz000i",
         "server": "nodered02.remote-red.com",
         "region": "de"
+    },
+    {
+        "id": "b86d63f3f59dd4c8",
+        "type": "influxdb",
+        "hostname": "192.168.178.100",
+        "port": 8086,
+        "protocol": "http",
+        "database": "growbox",
+        "name": "Growbox",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "1.x",
+        "url": "http://localhost:8086",
+        "timeout": 10,
+        "rejectUnauthorized": true
     },
     {
         "id": "b09e345c96b25a66",
