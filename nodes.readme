@@ -6,8 +6,9 @@ node-red-contrib-boolean-logic
 node-red-contrib-controltimer
 node-red-contrib-deconz
 node-red-contrib-eztimer
-node-red-contrib-influxdb (optional)
+node-red-contrib-influxdb
 node-red-contrib-persistent-global-context
 node-red-contrib-tasmota
 node-red-node-pushover (optional)
 node-red-node-ui-table
+node-red-contrib-remote (optional, RemoteRED app)
