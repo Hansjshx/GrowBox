@@ -10,6 +10,16 @@ Das Node-RED-Projekt automatisiert die Steuerung und Überwachung einer Growbox 
 
 ---
 
+### **Voraussetzungen**
+Folgende Docker Container:
+- node-RED
+- InfluxDB 1.x
+- Mosqitto
+- Grafana
+- Deconz oder andere ZigBee Steuerung
+
+---
+
 ### **Funktionen**
 #### **1. Steuerung der Geräte über ZigBee-Steckdosen**
 - Alle Geräte (z. B. Wasserpumpe, Lüfter, Beleuchtung) sind an ZigBee-fähige Steckdosen angeschlossen.
@@ -77,6 +87,16 @@ Dieses Projekt kombiniert moderne IoT-Technologien wie ZigBee mit hydroponischer
 
 ### **Project Description**  
 The Node-RED project automates the control and monitoring of a grow box equipped with a hydroponic ebb and flow system. Connected devices such as water pumps, fans, and lighting are controlled via ZigBee smart plugs. Two ESP32 boards collect climate data (temperature, humidity, light intensity) as well as nutrient solution parameters (temperature, level, EC value). Node-RED serves as the central platform for control, visualization, and data logging.
+
+---
+
+### **Requirements**
+Docker Container needed:
+- node-RED
+- InfluxDB 1.x
+- Mosqitto
+- Grafana
+- Deconz oder andere ZigBee Steuerung
 
 ---
 
