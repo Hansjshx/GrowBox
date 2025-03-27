@@ -7218,123 +7218,19 @@
         "info": ""
     },
     {
-        "id": "a1e5f30b.72e3e",
-        "type": "influxdb in",
-        "z": "c1d3b8a0.b23f98",
-        "d": true,
-        "influxdb": "b86d63f3f59dd4c8",
-        "name": "EC-Wert aus InfluxDB",
-        "query": "SELECT mean(value) AS ec FROM ec WHERE time > now() - 12h GROUP BY time(1h) fill(previous)",
-        "rawOutput": false,
-        "precision": "",
-        "retentionPolicy": "",
-        "org": "",
-        "x": 200,
-        "y": 80,
-        "wires": [
-            [
-                "b234b95f.4f5c48"
-            ]
-        ]
-    },
-    {
-        "id": "a2e5f31b.72e4f",
-        "type": "influxdb in",
-        "z": "c1d3b8a0.b23f98",
-        "d": true,
-        "influxdb": "b86d63f3f59dd4c8",
-        "name": "Wasserstand aus InfluxDB",
-        "query": "SELECT mean(value) AS wasserstand FROM level WHERE time > now() - 12h GROUP BY time(1h) fill(previous)",
-        "rawOutput": false,
-        "precision": "",
-        "retentionPolicy": "",
-        "org": "",
-        "x": 220,
-        "y": 140,
-        "wires": [
-            [
-                "b234b95f.4f5c48"
-            ]
-        ]
-    },
-    {
-        "id": "a3e5f32c.72e5c",
-        "type": "influxdb in",
-        "z": "c1d3b8a0.b23f98",
-        "d": true,
-        "influxdb": "b86d63f3f59dd4c8",
-        "name": "pH-Wert aus InfluxDB",
-        "query": "SELECT value AS ph FROM ph \nWHERE time >= now() - 2d \nORDER BY time DESC \nLIMIT 4\n",
-        "rawOutput": false,
-        "precision": "",
-        "retentionPolicy": "",
-        "org": "",
-        "x": 240,
-        "y": 200,
-        "wires": [
-            [
-                "b234b95f.4f5c48"
-            ]
-        ]
-    },
-    {
-        "id": "a4e5f33d.72e6d",
-        "type": "influxdb in",
-        "z": "c1d3b8a0.b23f98",
-        "d": true,
-        "influxdb": "b86d63f3f59dd4c8",
-        "name": "Zyklus aus InfluxDB",
-        "query": "SELECT last(value) AS zyklus FROM zyklus",
-        "rawOutput": false,
-        "precision": "",
-        "retentionPolicy": "",
-        "org": "",
-        "x": 300,
-        "y": 260,
-        "wires": [
-            [
-                "b234b95f.4f5c48"
-            ]
-        ]
-    },
-    {
-        "id": "b234b95f.4f5c48",
-        "type": "join",
-        "z": "c1d3b8a0.b23f98",
-        "d": true,
-        "name": "Daten zusammenfügen",
-        "mode": "custom",
-        "build": "array",
-        "property": "payload",
-        "propertyType": "msg",
-        "key": "topic",
-        "joiner": "\\n",
-        "useparts": true,
-        "timeout": "5",
-        "count": "4",
-        "reduceRight": false,
-        "x": 530,
-        "y": 140,
-        "wires": [
-            [
-                "c91b01d3.4c1d6"
-            ]
-        ]
-    },
-    {
         "id": "c91b01d3.4c1d6",
         "type": "function",
         "z": "c1d3b8a0.b23f98",
         "name": "Analyse der Messwerte",
-        "func": "// 📥 Original-Payload aus der InfluxDB-Abfrage\nlet daten = msg.payload;\n\nif (!Array.isArray(daten) || daten.length === 0) {\n    msg.payload = { status: \"Keine historischen Daten verfügbar.\" };\n    return msg;\n}\n\n// 🌊 Filtern: Nur Werte mit `Zyklus === 0`\nlet gefilterteWasserstandDaten = daten.filter(d => d.Zyklus === 0);\n\n// 📉 Funktion zur Berechnung des Trends (lineare Regression)\nfunction berechneTrend(daten, feld) {\n    if (daten.length < 2) return 0; // Zu wenige Daten für Trend\n\n    let n = daten.length;\n    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;\n\n    for (let i = 0; i < n; i++) {\n        let x = i; // Zeitindex (relative Reihenfolge)\n        let y = Number(daten[i][feld]); // Messwert\n        if (isNaN(y)) return 0;\n        sumX += x;\n        sumY += y;\n        sumXY += x * y;\n        sumX2 += x * x;\n    }\n\n    let m = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);\n    return m;\n}\n\n// 📈 Berechnung der Trends\nlet wasserstandTrend = berechneTrend(gefilterteWasserstandDaten, \"Level\");\nlet ecTrend = berechneTrend(daten, \"EC\");  // Alle EC-Werte nutzen\nlet phTrend = berechneTrend(daten, \"PH\");  // Falls PH vorhanden ist\n\n// 🏷️ Trend-Klassifikation\nlet wasserstandStatus = wasserstandTrend > 0.5 ? \"steigend\" : wasserstandTrend < -0.5 ? \"fallend\" : \"statisch\";\nlet ecStatus = ecTrend > 0.5 ? \"steigend\" : ecTrend < -0.5 ? \"fallend\" : \"statisch\";\nlet phStatus = phTrend > 0.05 ? \"steigend\" : phTrend < -0.05 ? \"fallend\" : \"statisch\";\n\n// 📋 Diagnose & Problemerkennung (Beispielhafte Zuordnung)\nlet status = \"\";\nif (wasserstandStatus === \"statisch\" && ecStatus === \"statisch\" && phStatus === \"statisch\") {\n    status = \"Die Pflanze nimmt nichts auf, wechsle die Nährlösung.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"statisch\" && phStatus === \"steigend\") {\n    status = \"Die Pflanze nimmt Wasser auf, aber keine Nährstoffe. Erhöhe die Nährstoffkonzentration.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"statisch\" && phStatus === \"fallend\") {\n    status = \"Die Pflanze nimmt Nährstoffe auf, aber kaum Wasser.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"steigend\" && phStatus === \"statisch\") {\n    status = \"Salzgehalt steigend, möglicherweise durch Verdunstung oder zu starke Düngung. Füge Wasser hinzu.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"steigend\" && phStatus === \"steigend\") {\n    status = \"Die Pflanze nimmt keine Nährstoffe auf, Salzgehalt steigend, möglicherweise Nährstoffblockade. Spüle mit klarem Wasser und passe die Nährlösung an.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"steigend\" && phStatus === \"fallend\") {\n    status = \"Nährstoffaufnahme, aber pH-Wert sinkt. Überprüfe die Pufferkapazität der Nährlösung.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"fallend\" && phStatus === \"statisch\") {\n    status = \"Die Pflanze nimmt weniger Nährstoffe auf, möglicherweise Unterversorgung. Erhöhe die Nährstoffkonzentration leicht.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"fallend\" && phStatus === \"steigend\") {\n    status = \"Die Pflanze nimmt Wasser auf, aber kaum Nährstoffe. Erhöhe die Nährstoffkonzentration.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"fallend\" && phStatus === \"fallend\") {\n    status = \"Pflanze nimmt Nährstoffe auf, aber die Nährlösung könnte zu stark verdünnt sein. Überprüfe die Düngung.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"statisch\" && phStatus === \"statisch\") {\n    status = \"Pflanze trinkt und nimmt Nährstoffe im gleichen Verhältnis auf, keine Änderung nötig.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"statisch\" && phStatus === \"steigend\") {\n    status = \"Pflanze trinkt, aber nimmt nicht genug Nährstoffe auf. Erhöhe die Nährstoffkonzentration.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"statisch\" && phStatus === \"fallend\") {\n    status = \"Pflanze nimmt zu viele Nährstoffe auf, EC senken.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"steigend\" && phStatus === \"statisch\") {\n    status = \"Zu viel Salz im Wasser, EC reduzieren, frisches Wasser hinzufügen.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"steigend\" && phStatus === \"steigend\") {\n    status = \"Nährstoffkonzentration steigend, möglicherweise Blockade. Spüle das System und passe die Nährlösung an.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"steigend\" && phStatus === \"fallend\") {\n    status = \"EC steigend, pH fallend, mögliche Überdüngung. Spüle und senke die EC leicht.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"fallend\" && phStatus === \"statisch\") {\n    status = \"Pflanze nimmt mehr Nährstoffe auf als Wasser. Möglicherweise Unterversorgung. EC leicht erhöhen.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"fallend\" && phStatus === \"steigend\") {\n    status = \"Pflanze trinkt, aber nimmt wenig Nährstoffe auf. Erhöhe die Nährstoffkonzentration.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"fallend\" && phStatus === \"fallend\") {\n    status = \"Nährstoffkonzentration zu niedrig, EC leicht erhöhen.\";\n} else {\n    status = \"Überprüfe die Wurzeln, möglicherweise sterben sie ab.\";\n}\n\n// 📤 Ergebnis zurückgeben\nmsg.payload = {\n    status: status,\n    trends: {\n        wasserstand: wasserstandStatus,\n        ec: ecStatus,\n        ph: phStatus\n    },\n    wasserstandTrend: wasserstandTrend,\n    ecTrend: ecTrend,\n    phTrend: phTrend\n    // zyklus: zyklus\n};\n\nreturn msg;\n",
+        "func": "// 📥 Original-Payload aus der InfluxDB-Abfrage\nlet daten = msg.payload;\n\nif (!Array.isArray(daten) || daten.length === 0) {\n    msg.payload = { status: \"Keine historischen Daten verfügbar.\" };\n    return msg;\n}\n\n// 🌊 Filtern: Nur Werte mit `Zyklus === 0`\nlet gefilterteWasserstandDaten = daten.filter(d => d.Zyklus === 0);\n\n// 📉 Funktion zur Berechnung des Trends (lineare Regression)\nfunction berechneTrend(daten, feld) {\n    if (daten.length < 2) return 0; // Zu wenige Daten für Trend\n\n    let n = daten.length;\n    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;\n\n    for (let i = 0; i < n; i++) {\n        let x = i; // Zeitindex (relative Reihenfolge)\n        let y = Number(daten[i][feld]); // Messwert\n        if (isNaN(y)) return 0;\n        sumX += x;\n        sumY += y;\n        sumXY += x * y;\n        sumX2 += x * x;\n    }\n\n    let m = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);\n    return m;\n}\n\n// 📈 Berechnung der Trends\nlet wasserstandTrend = berechneTrend(gefilterteWasserstandDaten, \"Level\");\nlet ecTrend = berechneTrend(daten, \"EC\");  // Alle EC-Werte nutzen\nlet phTrend = berechneTrend(daten, \"PH\");  // Falls PH vorhanden ist\n\n// 🏷️ Trend-Klassifikation\nlet wasserstandStatus = wasserstandTrend > 0.5 ? \"steigend\" : wasserstandTrend < -0.5 ? \"fallend\" : \"statisch\";\nlet ecStatus = ecTrend > 0.5 ? \"steigend\" : ecTrend < -0.5 ? \"fallend\" : \"statisch\";\nlet phStatus = phTrend > 0.05 ? \"steigend\" : phTrend < -0.05 ? \"fallend\" : \"statisch\";\n\n// 📋 Diagnose & Problemerkennung (Beispielhafte Zuordnung)\nlet status = \"\";\nif (wasserstandStatus === \"statisch\" && ecStatus === \"statisch\" && phStatus === \"statisch\") {\n    status = \"Die Pflanze nimmt nichts auf, wechsle die Nährlösung.Überprüfe die Wurzeln, möglicherweise sterben sie ab.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"statisch\" && phStatus === \"steigend\") {\n    status = \"Die Pflanze nimmt Wasser auf, aber keine Nährstoffe. Erhöhe die Nährstoffkonzentration.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"statisch\" && phStatus === \"fallend\") {\n    status = \"Die Pflanze nimmt Nährstoffe auf, aber kaum Wasser.Reduziere die Nährstoffkonzentration.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"steigend\" && phStatus === \"statisch\") {\n    status = \"Salzgehalt steigend, möglicherweise durch Verdunstung oder zu starke Düngung. Füge Wasser hinzu.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"steigend\" && phStatus === \"steigend\") {\n    status = \"Die Pflanze nimmt keine Nährstoffe auf, Salzgehalt steigend, möglicherweise Nährstoffblockade. Spüle mit klarem Wasser und passe die Nährlösung an.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"steigend\" && phStatus === \"fallend\") {\n    status = \"Nährstoffaufnahme, aber pH-Wert sinkt. Überprüfe die Pufferkapazität der Nährlösung.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"fallend\" && phStatus === \"statisch\") {\n    status = \"Die Pflanze nimmt weniger Nährstoffe auf, möglicherweise Unterversorgung. Erhöhe die Nährstoffkonzentration leicht.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"fallend\" && phStatus === \"steigend\") {\n    status = \"Die Pflanze nimmt Wasser auf, aber kaum Nährstoffe. Erhöhe die Nährstoffkonzentration.\";\n} else if (wasserstandStatus === \"statisch\" && ecStatus === \"fallend\" && phStatus === \"fallend\") {\n    status = \"Pflanze nimmt Nährstoffe auf, aber die Nährlösung könnte zu stark verdünnt sein. Überprüfe die Düngung.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"statisch\" && phStatus === \"statisch\") {\n    status = \"Pflanze trinkt und nimmt Nährstoffe im gleichen Verhältnis auf, keine Änderung nötig.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"statisch\" && phStatus === \"steigend\") {\n    status = \"Pflanze trinkt, aber nimmt nicht genug Nährstoffe auf. Erhöhe die Nährstoffkonzentration.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"statisch\" && phStatus === \"fallend\") {\n    status = \"Pflanze nimmt zu viele Nährstoffe auf, EC senken.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"steigend\" && phStatus === \"statisch\") {\n    status = \"Zu viel Salz im Wasser, EC reduzieren, frisches Wasser hinzufügen.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"steigend\" && phStatus === \"steigend\") {\n    status = \"Nährstoffkonzentration steigend, möglicherweise Blockade. Spüle das System und passe die Nährlösung an.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"steigend\" && phStatus === \"fallend\") {\n    status = \"EC steigend, pH fallend, mögliche Überdüngung. Spüle und senke die EC leicht.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"fallend\" && phStatus === \"statisch\") {\n    status = \"Pflanze nimmt mehr Nährstoffe auf als Wasser. Möglicherweise Unterversorgung. EC leicht erhöhen.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"fallend\" && phStatus === \"steigend\") {\n    status = \"Pflanze trinkt, aber nimmt wenig Nährstoffe auf. Erhöhe die Nährstoffkonzentration.\";\n} else if (wasserstandStatus === \"fallend\" && ecStatus === \"fallend\" && phStatus === \"fallend\") {\n    status = \"Nährstoffkonzentration zu niedrig, EC leicht erhöhen.\";\n} else {\n    status = \"zu wenig Daten für eine Analyse\"\n}\n\n// 📤 Ergebnis zurückgeben\nmsg.payload = {\n    status: status,\n    trends: {\n        wasserstand: wasserstandStatus,\n        ec: ecStatus,\n        ph: phStatus\n    },\n    wasserstandTrend: wasserstandTrend,\n    ecTrend: ecTrend,\n    phTrend: phTrend\n    // zyklus: zyklus\n};\n\nreturn msg;\n",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 760,
-        "y": 180,
+        "x": 630,
+        "y": 80,
         "wires": [
             [
                 "f01e56a3.4e6a38",
@@ -7349,8 +7245,8 @@
         "name": "Debug-Ausgabe",
         "active": true,
         "complete": "payload",
-        "x": 1040,
-        "y": 320,
+        "x": 900,
+        "y": 100,
         "wires": []
     },
     {
@@ -7374,14 +7270,10 @@
         "topic": "",
         "payload": "",
         "payloadType": "date",
-        "x": 110,
-        "y": 320,
+        "x": 130,
+        "y": 80,
         "wires": [
             [
-                "a4e5f33d.72e6d",
-                "a3e5f32c.72e5c",
-                "a2e5f31b.72e4f",
-                "a1e5f30b.72e3e",
                 "e6f6219b873f2d1c"
             ]
         ]
@@ -7404,7 +7296,7 @@
         "color": "#717171",
         "wrapText": true,
         "className": "",
-        "x": 1140,
+        "x": 1100,
         "y": 60,
         "wires": []
     },
@@ -7427,7 +7319,7 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 930,
+        "x": 910,
         "y": 60,
         "wires": [
             [
@@ -7436,34 +7328,18 @@
         ]
     },
     {
-        "id": "aca2c537dd71a673",
-        "type": "debug",
-        "z": "c1d3b8a0.b23f98",
-        "name": "debug 8",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "false",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 630,
-        "y": 380,
-        "wires": []
-    },
-    {
         "id": "e6f6219b873f2d1c",
         "type": "influxdb in",
         "z": "c1d3b8a0.b23f98",
         "influxdb": "b86d63f3f59dd4c8",
         "name": "",
-        "query": "SELECT mean(\"tankEC\") AS \"EC\", mean(\"tankPH\") AS \"PH\", mean(\"tankLevel\") AS \"Level\", mean(\"tankTemp\") AS \"Temp\", mean(\"tankZyklus\") AS \"Zyklus\" FROM \"growctl\" WHERE time > now() - 12h GROUP BY time(1h) fill(previous)",
+        "query": "SELECT mean(\"tankEC\") AS \"EC\", mean(\"tankPH\") AS \"PH\", mean(\"tankLevel\") AS \"Level\", mean(\"tankTemp\") AS \"Temp\", mean(\"tankZyklus\") AS \"Zyklus\" FROM \"growctl\" WHERE time > now() - 6h GROUP BY time(1h) fill(previous)",
         "rawOutput": false,
         "precision": "",
         "retentionPolicy": "",
         "org": "organisation",
-        "x": 420,
-        "y": 320,
+        "x": 380,
+        "y": 80,
         "wires": [
             [
                 "c91b01d3.4c1d6"
@@ -7473,7 +7349,7 @@
     {
         "id": "f6f2187d.f17ca8",
         "type": "tab",
-        "label": "Grafana on NR",
+        "label": "Grafana Verlauf",
         "disabled": false,
         "info": ""
     },
@@ -7488,8 +7364,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 660,
-        "y": 200,
+        "x": 620,
+        "y": 80,
         "wires": [
             [
                 "aeaaadf4.7dcb",
@@ -7509,8 +7385,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 880,
-        "y": 180,
+        "x": 840,
+        "y": 60,
         "wires": [
             [
                 "118d8d74464c178e"
@@ -7529,8 +7405,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 880,
-        "y": 240,
+        "x": 840,
+        "y": 120,
         "wires": [
             [
                 "07b9f130dc9caaea"
@@ -7558,8 +7434,8 @@
         "topic": "",
         "payload": "now-12h",
         "payloadType": "str",
-        "x": 200,
-        "y": 200,
+        "x": 160,
+        "y": 80,
         "wires": [
             [
                 "b474a8055f2159d5"
@@ -7576,8 +7452,8 @@
         "src": "http://192.168.178.100:3000/d-solo/fad0e490-16e3-4c7e-94b5-e873d457fb5d/growbox?orgId=1&refresh=5s&theme=light&panelId=1",
         "width": "12",
         "height": 8,
-        "x": 1090,
-        "y": 180,
+        "x": 1050,
+        "y": 60,
         "wires": []
     },
     {
@@ -7633,8 +7509,8 @@
         "className": "",
         "typeIsComboBox": true,
         "msgTrigger": "onChange",
-        "x": 430,
-        "y": 200,
+        "x": 390,
+        "y": 80,
         "wires": [
             [
                 "de8150aa.71733"
@@ -7651,14 +7527,14 @@
         "src": "http://192.168.178.100:3000/d-solo/fad0e490-16e3-4c7e-94b5-e873d457fb5d/growbox?orgId=1&refresh=5s&from=1741771857051&to=1741815057051&theme=light&panelId=4",
         "width": "12",
         "height": 8,
-        "x": 1070,
-        "y": 240,
+        "x": 1030,
+        "y": 120,
         "wires": []
     },
     {
         "id": "fd798a6de80d662a",
         "type": "tab",
-        "label": "Flow 2",
+        "label": "Tankdaten schreiben",
         "disabled": false,
         "info": "",
         "env": []
@@ -7675,11 +7551,10 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 660,
-        "y": 200,
+        "x": 640,
+        "y": 160,
         "wires": [
             [
-                "e3015750e76a8197",
                 "ddd6c4c3147bad9d"
             ]
         ]
@@ -7705,8 +7580,8 @@
         "reduceInit": "",
         "reduceInitType": "",
         "reduceFixup": "",
-        "x": 470,
-        "y": 200,
+        "x": 450,
+        "y": 160,
         "wires": [
             [
                 "cbd8e06760845b1d"
@@ -7725,8 +7600,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 320,
-        "y": 240,
+        "x": 300,
+        "y": 200,
         "wires": [
             [
                 "ab3fcbae77a18b58"
@@ -7746,8 +7621,8 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 200,
-        "y": 180,
+        "x": 180,
+        "y": 140,
         "wires": [
             [
                 "ab3fcbae77a18b58"
@@ -7782,8 +7657,8 @@
                 ]
             }
         ],
-        "x": 170,
-        "y": 240,
+        "x": 150,
+        "y": 200,
         "wires": [
             [
                 "9dc9cc9c8b309eed"
@@ -7803,15 +7678,15 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 860,
-        "y": 380,
+        "x": 680,
+        "y": 400,
         "wires": []
     },
     {
         "id": "9200737dcbe24c57",
         "type": "inject",
         "z": "fd798a6de80d662a",
-        "name": "",
+        "name": "letzten pH lesen",
         "props": [
             {
                 "p": "payload"
@@ -7821,15 +7696,15 @@
                 "vt": "str"
             }
         ],
-        "repeat": "10",
+        "repeat": "30",
         "crontab": "",
         "once": true,
         "onceDelay": 0.1,
         "topic": "ph",
         "payload": "",
         "payloadType": "date",
-        "x": 200,
-        "y": 100,
+        "x": 190,
+        "y": 60,
         "wires": [
             [
                 "a4cdd8cec28189c9"
@@ -7850,8 +7725,8 @@
         "retentionPolicyV18Flux": "",
         "org": "organisation",
         "bucket": "bucket",
-        "x": 1190,
-        "y": 180,
+        "x": 890,
+        "y": 160,
         "wires": []
     },
     {
@@ -7907,18 +7782,17 @@
         "type": "influxdb in",
         "z": "fd798a6de80d662a",
         "influxdb": "b86d63f3f59dd4c8",
-        "name": "",
+        "name": "SELECT LAST(value) AS PH FROM ph;",
         "query": "SELECT LAST(value) AS PH FROM ph;",
         "rawOutput": false,
         "precision": "",
         "retentionPolicy": "",
         "org": "organisation",
-        "x": 400,
-        "y": 100,
+        "x": 480,
+        "y": 60,
         "wires": [
             [
-                "d1517bda1aec5ab0",
-                "e3015750e76a8197"
+                "d1517bda1aec5ab0"
             ]
         ]
     },
@@ -7926,7 +7800,7 @@
         "id": "d1517bda1aec5ab0",
         "type": "function",
         "z": "fd798a6de80d662a",
-        "name": "function 17",
+        "name": "pH Topic und Payload",
         "func": "msg.payload = msg.payload[0].PH;\nmsg.topic = \"ph\";\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
@@ -7934,8 +7808,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 610,
-        "y": 100,
+        "x": 780,
+        "y": 60,
         "wires": [
             [
                 "ab3fcbae77a18b58"
